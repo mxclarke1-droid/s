@@ -1,0 +1,1420 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>My Santa Tracker</title>
+
+<!-- KEEP GLOBE.GL FIRST -->
+<script src="https://unpkg.com/globe.gl"></script>
+
+<!-- GLTF LOADER ONLY — DO NOT LOAD ANOTHER three.min.js -->
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #000;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+#globe {
+    width: 100vw;
+    height: 100vh;
+}
+
+/* LOGO */
+#logo {
+    position: absolute;
+    top: 22px;
+    right: 25px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: white;
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 5px #000, 0 0 10px rgba(255,255,255,.25);
+}
+
+#santaFace {
+    width: 48px;
+    height: 48px;
+    position: relative;
+    background: #e6a06a;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 10px rgba(255,255,255,.3), 0 3px 8px rgba(0,0,0,.6);
+}
+
+#santaHat {
+    position: absolute;
+    width: 44px;
+    height: 24px;
+    left: 1px;
+    top: -15px;
+    background: #c91e2b;
+    border-radius: 40px 40px 4px 4px;
+    transform: rotate(-5deg);
+    border-bottom: 6px solid white;
+}
+
+#hatBall {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    background: white;
+    border-radius: 50%;
+    right: -3px;
+    top: -4px;
+}
+
+#beard {
+    position: absolute;
+    left: 7px;
+    bottom: -1px;
+    width: 30px;
+    height: 21px;
+    background: white;
+    border-radius: 8px 8px 18px 18px;
+}
+
+.eye {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    background: #111;
+    border-radius: 50%;
+    top: 20px;
+}
+
+.eye.left { left: 13px; }
+.eye.right { right: 13px; }
+
+#logoText {
+    font-size: 19px;
+}
+
+/* PANEL */
+#trackingPanel {
+    position: absolute;
+    top: 25px;
+    left: 25px;
+    width: 310px;
+    background: rgba(8,12,14,.92);
+    border: 2px solid #687277;
+    border-radius: 5px;
+    color: white;
+    padding: 18px;
+    z-index: 10;
+    box-shadow: 0 0 15px rgba(0,0,0,.85),
+                inset 0 0 20px rgba(255,255,255,.03);
+    backdrop-filter: blur(5px);
+}
+
+#panelHeader {
+    border-bottom: 1px solid #596267;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+}
+
+#panelHeader h2 {
+    margin: 0;
+    font-size: 21px;
+    letter-spacing: 2px;
+}
+
+#status {
+    margin-top: 8px;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+#statusDot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    background: #45d66b;
+    border-radius: 50%;
+    margin-right: 7px;
+    box-shadow: 0 0 8px #45d66b;
+}
+
+.infoRow {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+    padding: 10px 0;
+    font-size: 13px;
+    gap: 10px;
+}
+
+.infoName {
+    color: #aeb7bb;
+}
+
+.infoValue {
+    font-weight: bold;
+    text-align: right;
+}
+
+/* RADIO */
+#signalBox {
+    margin-top: 15px;
+    padding-top: 12px;
+    border-top: 1px solid #596267;
+}
+
+#signalTitle {
+    font-size: 11px;
+    color: #aeb7bb;
+    margin-bottom: 7px;
+    letter-spacing: 1px;
+}
+
+#signalBars {
+    display: flex;
+    gap: 3px;
+    height: 16px;
+}
+
+.signalBar {
+    flex: 1;
+    background: #45d66b;
+    box-shadow: 0 0 5px rgba(69,214,107,.4);
+}
+
+#signalText {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #45d66b;
+}
+
+#connections {
+    margin-top: 14px;
+    border-top: 1px solid #596267;
+    padding-top: 10px;
+}
+
+.connection {
+    display: grid;
+    grid-template-columns: 25px 1fr auto;
+    align-items: center;
+    font-size: 10px;
+    letter-spacing: .5px;
+    padding: 7px 0;
+}
+
+.connectionIcon {
+    font-size: 15px;
+}
+
+.connectionStatus {
+    color: #45d66b;
+    font-size: 8px;
+}
+
+.connectionStatus.waiting {
+    color: #d5a84c;
+}
+
+.connectionLine {
+    height: 12px;
+    width: 1px;
+    margin-left: 12px;
+    background: #596267;
+}
+
+/* TOWER */
+#towerControl {
+    margin-top: 15px;
+    padding-top: 12px;
+    border-top: 1px solid #596267;
+}
+
+#towerTitle {
+    font-size: 10px;
+    color: #aeb7bb;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+#towerButton {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #45d66b;
+    background: rgba(69,214,107,.12);
+    color: #45d66b;
+    font-weight: bold;
+    letter-spacing: 1px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+#towerButton.off {
+    border-color: #777;
+    background: rgba(100,100,100,.15);
+    color: #aaa;
+}
+
+#bottomText {
+    margin-top: 15px;
+    font-size: 10px;
+    color: #858e92;
+    line-height: 1.5;
+}
+
+/* PARENT SETTINGS */
+#parentSettings {
+    margin-top: 15px;
+    border-top: 1px solid #596267;
+    padding-top: 12px;
+}
+
+#parentSettings h3 {
+    margin: 0 0 10px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #aeb7bb;
+}
+
+#stateSelect,
+#arrivalTime {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 7px;
+    background: #111;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 3px;
+}
+
+#saveSettings,
+#startTracking {
+    width: 100%;
+    padding: 10px;
+    border: 0;
+    border-radius: 3px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+#saveSettings {
+    background: #555;
+    color: white;
+    margin-bottom: 7px;
+}
+
+#startTracking {
+    background: #c91e2b;
+    color: white;
+}
+
+#musicButton {
+    width: 100%;
+    padding: 9px;
+    margin-top: 7px;
+    background: #18251b;
+    color: #45d66b;
+    border: 1px solid #45d66b;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+/* SLEIGH STATUS */
+#sleighStatus {
+    margin-top: 8px;
+    font-size: 10px;
+    color: #45d66b;
+}
+
+/* MOBILE */
+@media(max-width:700px) {
+    #trackingPanel {
+        width: 280px;
+        left: 10px;
+        top: 10px;
+        padding: 14px;
+    }
+
+    #logo {
+        top: 12px;
+        right: 12px;
+    }
+
+    #logoText {
+        font-size: 14px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div id="logo">
+    <div id="santaFace">
+        <div id="santaHat">
+            <div id="hatBall"></div>
+        </div>
+        <div class="eye left"></div>
+        <div class="eye right"></div>
+        <div id="beard"></div>
+    </div>
+
+    <div id="logoText">SANTA TRACKER</div>
+</div>
+
+<div id="trackingPanel">
+
+    <div id="panelHeader">
+        <h2>TRACKING CONSOLE</h2>
+
+        <div id="status">
+            <span id="statusDot"></span>
+            TRACKING ACTIVE
+        </div>
+    </div>
+
+    <div class="infoRow">
+        <span class="infoName">CURRENT LOCATION</span>
+        <span class="infoValue" id="location">NORTH POLE</span>
+    </div>
+
+    <div class="infoRow">
+        <span class="infoName">SPEED</span>
+        <span class="infoValue">1,850 MPH</span>
+    </div>
+
+    <div class="infoRow">
+        <span class="infoName">ALTITUDE</span>
+        <span class="infoValue">35,000 FT</span>
+    </div>
+
+    <div class="infoRow">
+        <span class="infoName">REINDEER</span>
+        <span class="infoValue">9</span>
+    </div>
+
+    <div class="infoRow">
+        <span class="infoName">DESTINATION</span>
+        <span class="infoValue" id="destination">NOT SET</span>
+    </div>
+
+    <div id="signalBox">
+        <div id="signalTitle">RADIO TRACKING SIGNAL</div>
+
+        <div id="signalBars">
+            <div class="signalBar"></div>
+            <div class="signalBar"></div>
+            <div class="signalBar"></div>
+            <div class="signalBar"></div>
+            <div class="signalBar"></div>
+            <div class="signalBar"></div>
+            <div class="signalBar"></div>
+            <div class="signalBar"></div>
+            <div class="signalBar"></div>
+            <div class="signalBar"></div>
+        </div>
+
+        <div id="signalText">SIGNAL RECEIVED</div>
+
+        <div id="connections">
+
+            <div class="connection">
+                <span class="connectionIcon">📡</span>
+                <span>CELL TOWERS</span>
+                <span id="cellStatus" class="connectionStatus">
+                    CONNECTED
+                </span>
+            </div>
+
+            <div class="connectionLine"></div>
+
+            <div class="connection">
+                <span class="connectionIcon">🛰️</span>
+                <span>SATELLITES</span>
+                <span class="connectionStatus waiting">
+                    STANDBY
+                </span>
+            </div>
+
+            <div class="connectionLine"></div>
+
+            <div class="connection">
+                <span class="connectionIcon">◉</span>
+                <span>TRACKING SYSTEM</span>
+                <span class="connectionStatus">
+                    ONLINE
+                </span>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="towerControl">
+        <div id="towerTitle">CELL TOWER DISPLAY</div>
+
+        <button id="towerButton">
+            📡 CELL TOWERS: ON
+        </button>
+    </div>
+
+    <div id="parentSettings">
+
+        <h3>👨‍👩‍👦 PARENT SETTINGS</h3>
+
+        <select id="stateSelect">
+            <option value="">Choose destination state</option>
+            <option value="Alabama">Alabama</option>
+            <option value="Alaska">Alaska</option>
+            <option value="Arizona">Arizona</option>
+            <option value="Arkansas">Arkansas</option>
+            <option value="California">California</option>
+            <option value="Colorado">Colorado</option>
+            <option value="Connecticut">Connecticut</option>
+            <option value="Delaware">Delaware</option>
+            <option value="Florida">Florida</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Hawaii">Hawaii</option>
+            <option value="Idaho">Idaho</option>
+            <option value="Illinois">Illinois</option>
+            <option value="Indiana">Indiana</option>
+            <option value="Iowa">Iowa</option>
+            <option value="Kansas">Kansas</option>
+            <option value="Kentucky">Kentucky</option>
+            <option value="Louisiana">Louisiana</option>
+            <option value="Maine">Maine</option>
+            <option value="Maryland">Maryland</option>
+            <option value="Massachusetts">Massachusetts</option>
+            <option value="Michigan">Michigan</option>
+            <option value="Minnesota">Minnesota</option>
+            <option value="Mississippi">Mississippi</option>
+            <option value="Missouri">Missouri</option>
+            <option value="Montana">Montana</option>
+            <option value="Nebraska">Nebraska</option>
+            <option value="Nevada">Nevada</option>
+            <option value="New Hampshire">New Hampshire</option>
+            <option value="New Jersey">New Jersey</option>
+            <option value="New Mexico">New Mexico</option>
+            <option value="New York">New York</option>
+            <option value="North Carolina">North Carolina</option>
+            <option value="North Dakota">North Dakota</option>
+            <option value="Ohio">Ohio</option>
+            <option value="Oklahoma">Oklahoma</option>
+            <option value="Oregon">Oregon</option>
+            <option value="Pennsylvania">Pennsylvania</option>
+            <option value="Rhode Island">Rhode Island</option>
+            <option value="South Carolina">South Carolina</option>
+            <option value="South Dakota">South Dakota</option>
+            <option value="Tennessee">Tennessee</option>
+            <option value="Texas">Texas</option>
+            <option value="Utah">Utah</option>
+            <option value="Vermont">Vermont</option>
+            <option value="Virginia">Virginia</option>
+            <option value="Washington">Washington</option>
+            <option value="West Virginia">West Virginia</option>
+            <option value="Wisconsin">Wisconsin</option>
+            <option value="Wyoming">Wyoming</option>
+        </select>
+
+        <input id="arrivalTime" type="time">
+
+        <button id="saveSettings">
+            SAVE PARENT SETTINGS
+        </button>
+
+        <button id="startTracking">
+            🎅 START TRACKING
+        </button>
+
+        <button id="musicButton">
+            🎄 PLAY CHRISTMAS JAZZ
+        </button>
+
+        <div id="sleighStatus">
+            3D SLEIGH: LOADING...
+        </div>
+
+    </div>
+
+    <div id="bottomText">
+        Tracking display for this Santa Tracker project.
+    </div>
+
+</div>
+
+<div id="globe"></div>
+
+<audio id="christmasMusic"
+       src="pulsebox-jazz-christmas-432315.mp3"
+       loop>
+</audio>
+
+<script>
+
+/* =====================================================
+   LOCATIONS
+   ===================================================== */
+
+const locations = [
+
+    {name:"NORTH POLE",lat:90,lng:0,level:1},
+
+    {name:"New York",lat:40.7128,lng:-74.006,level:1},
+    {name:"Los Angeles",lat:34.0522,lng:-118.2437,level:1},
+    {name:"Chicago",lat:41.8781,lng:-87.6298,level:1},
+    {name:"Houston",lat:29.7604,lng:-95.3698,level:1},
+    {name:"Phoenix",lat:33.4484,lng:-112.074,level:1},
+    {name:"Philadelphia",lat:39.9526,lng:-75.1652,level:1},
+    {name:"San Antonio",lat:29.4241,lng:-98.4936,level:1},
+    {name:"San Diego",lat:32.7157,lng:-117.1611,level:1},
+    {name:"Dallas",lat:32.7767,lng:-96.797,level:1},
+    {name:"Atlanta",lat:33.749,lng:-84.388,level:1},
+    {name:"Miami",lat:25.7617,lng:-80.1918,level:1},
+    {name:"Boston",lat:42.3601,lng:-71.0589,level:1},
+    {name:"Seattle",lat:47.6062,lng:-122.3321,level:1},
+    {name:"Denver",lat:39.7392,lng:-104.9903,level:1},
+    {name:"Washington DC",lat:38.9072,lng:-77.0369,level:1},
+    {name:"Las Vegas",lat:36.1699,lng:-115.1398,level:1},
+    {name:"Anchorage",lat:61.2181,lng:-149.9003,level:2},
+    {name:"Honolulu",lat:21.3069,lng:-157.8583,level:2},
+
+    {name:"Toronto",lat:43.6532,lng:-79.3832,level:1},
+    {name:"Vancouver",lat:49.2827,lng:-123.1207,level:1},
+    {name:"Montreal",lat:45.5017,lng:-73.5673,level:1},
+    {name:"Calgary",lat:51.0447,lng:-114.0719,level:1},
+
+    {name:"Mexico City",lat:19.4326,lng:-99.1332,level:1},
+    {name:"Guadalajara",lat:20.6597,lng:-103.3496,level:1},
+    {name:"Monterrey",lat:25.6866,lng:-100.3161,level:1},
+    {name:"Cancun",lat:21.1619,lng:-86.8515,level:2},
+
+    /* CARIBBEAN */
+    {name:"San Juan",lat:18.4655,lng:-66.1057,level:1},
+    {name:"Santo Domingo",lat:18.4861,lng:-69.9312,level:1},
+    {name:"Havana",lat:23.1136,lng:-82.3666,level:1},
+    {name:"Kingston",lat:17.9712,lng:-76.7936,level:2},
+    {name:"Nassau",lat:25.0443,lng:-77.3504,level:2},
+    {name:"Bridgetown",lat:13.0975,lng:-59.6167,level:2},
+    {name:"Port of Spain",lat:10.659,lng:-61.509,level:2},
+    {name:"Castries",lat:14.0101,lng:-60.9875,level:3},
+    {name:"Roseau",lat:15.3017,lng:-61.3881,level:3},
+    {name:"St Georges",lat:12.0561,lng:-61.7488,level:3},
+
+    /* SOUTH AMERICA */
+    {name:"Buenos Aires",lat:-34.6037,lng:-58.3816,level:1},
+    {name:"São Paulo",lat:-23.5505,lng:-46.6333,level:1},
+    {name:"Rio de Janeiro",lat:-22.9068,lng:-43.1729,level:1},
+    {name:"Santiago",lat:-33.4489,lng:-70.6693,level:1},
+    {name:"Lima",lat:-12.0464,lng:-77.0428,level:1},
+    {name:"Bogota",lat:4.711,lng:-74.0721,level:1},
+    {name:"Quito",lat:-0.1807,lng:-78.4678,level:1},
+    {name:"Caracas",lat:10.4806,lng:-66.9036,level:1},
+
+    /* EUROPE */
+    {name:"London",lat:51.5074,lng:-0.1278,level:1},
+    {name:"Paris",lat:48.8566,lng:2.3522,level:1},
+    {name:"Berlin",lat:52.52,lng:13.405,level:1},
+    {name:"Madrid",lat:40.4168,lng:-3.7038,level:1},
+    {name:"Rome",lat:41.9028,lng:12.4964,level:1},
+    {name:"Moscow",lat:55.7558,lng:37.6173,level:1},
+    {name:"Amsterdam",lat:52.3676,lng:4.9041,level:1},
+    {name:"Vienna",lat:48.2082,lng:16.3738,level:1},
+    {name:"Prague",lat:50.0755,lng:14.4378,level:1},
+    {name:"Dublin",lat:53.3498,lng:-6.2603,level:1},
+    {name:"Lisbon",lat:38.7223,lng:-9.1393,level:1},
+    {name:"Stockholm",lat:59.3293,lng:18.0686,level:1},
+    {name:"Oslo",lat:59.9139,lng:10.7522,level:1},
+    {name:"Helsinki",lat:60.1699,lng:24.9384,level:1},
+    {name:"Warsaw",lat:52.2297,lng:21.0122,level:1},
+
+    /* AFRICA */
+    {name:"Cairo",lat:30.0444,lng:31.2357,level:1},
+    {name:"Lagos",lat:6.5244,lng:3.3792,level:1},
+    {name:"Johannesburg",lat:-26.2041,lng:28.0473,level:1},
+    {name:"Cape Town",lat:-33.9249,lng:18.4241,level:1},
+    {name:"Nairobi",lat:-1.2921,lng:36.8219,level:1},
+    {name:"Casablanca",lat:33.5731,lng:-7.5898,level:1},
+    {name:"Accra",lat:5.6037,lng:-0.187,level:1},
+
+    /* MIDDLE EAST */
+    {name:"Dubai",lat:25.2048,lng:55.2708,level:1},
+    {name:"Riyadh",lat:24.7136,lng:46.6753,level:1},
+    {name:"Doha",lat:25.2854,lng:51.531,level:1},
+    {name:"Jerusalem",lat:31.7683,lng:35.2137,level:1},
+    {name:"Baghdad",lat:33.3152,lng:44.3661,level:1},
+    {name:"Tehran",lat:35.6892,lng:51.389,level:1},
+
+    /* ASIA */
+    {name:"Tokyo",lat:35.6762,lng:139.6503,level:1},
+    {name:"Beijing",lat:39.9042,lng:116.4074,level:1},
+    {name:"Shanghai",lat:31.2304,lng:121.4737,level:1},
+    {name:"Hong Kong",lat:22.3193,lng:114.1694,level:1},
+    {name:"Seoul",lat:37.5665,lng:126.978,level:1},
+    {name:"Singapore",lat:1.3521,lng:103.8198,level:1},
+    {name:"Bangkok",lat:13.7563,lng:100.5018,level:1},
+    {name:"Jakarta",lat:-6.2088,lng:106.8456,level:1},
+    {name:"Manila",lat:14.5995,lng:120.9842,level:1},
+    {name:"Mumbai",lat:19.076,lng:72.8777,level:1},
+    {name:"Delhi",lat:28.6139,lng:77.209,level:1},
+
+    /* AUSTRALIA / NZ */
+    {name:"Sydney",lat:-33.8688,lng:151.2093,level:1},
+    {name:"Melbourne",lat:-37.8136,lng:144.9631,level:1},
+    {name:"Brisbane",lat:-27.4698,lng:153.0251,level:1},
+    {name:"Perth",lat:-31.9505,lng:115.8605,level:1},
+    {name:"Auckland",lat:-36.8509,lng:174.7645,level:1},
+    {name:"Wellington",lat:-41.2866,lng:174.7756,level:2},
+
+    /* ARCTIC */
+    {name:"Longyearbyen",lat:78.2232,lng:15.6469,level:3},
+    {name:"Nuuk",lat:64.1814,lng:-51.6941,level:2},
+    {name:"Tromso",lat:69.6492,lng:18.9553,level:3},
+    {name:"Fairbanks",lat:64.8378,lng:-147.7164,level:3},
+    {name:"Murmansk",lat:68.9585,lng:33.0827,level:3}
+];
+
+/* =====================================================
+   STATES
+   ===================================================== */
+
+const states = {
+    Alabama:[32.8067,-86.7911],
+    Alaska:[64.2008,-149.4937],
+    Arizona:[34.0489,-111.0937],
+    Arkansas:[34.7999,-92.1999],
+    California:[36.7783,-119.4179],
+    Colorado:[39.5501,-105.7821],
+    Connecticut:[41.6032,-73.0877],
+    Delaware:[38.9108,-75.5277],
+    Florida:[27.6648,-81.5158],
+    Georgia:[32.1656,-82.9001],
+    Hawaii:[19.8968,-155.5828],
+    Idaho:[44.0682,-114.742],
+    Illinois:[40.6331,-89.3985],
+    Indiana:[40.2672,-86.1349],
+    Iowa:[41.878,-93.0977],
+    Kansas:[39.0119,-98.4842],
+    Kentucky:[37.8393,-84.27],
+    Louisiana:[30.9843,-91.9623],
+    Maine:[45.2538,-69.4455],
+    Maryland:[39.0458,-76.6413],
+    Massachusetts:[42.4072,-71.3824],
+    Michigan:[44.3148,-85.6024],
+    Minnesota:[46.7296,-94.6859],
+    Mississippi:[32.3547,-89.3985],
+    Missouri:[37.9643,-91.8318],
+    Montana:[46.8797,-110.3626],
+    Nebraska:[41.4925,-99.9018],
+    Nevada:[38.8026,-116.4194],
+    "New Hampshire":[43.1939,-71.5724],
+    "New Jersey":[40.0583,-74.4057],
+    "New Mexico":[34.5199,-105.8701],
+    "New York":[42.1657,-74.9481],
+    "North Carolina":[35.7596,-79.0193],
+    "North Dakota":[47.5515,-101.002],
+    Ohio:[40.4173,-82.9071],
+    Oklahoma:[35.0078,-97.0929],
+    Oregon:[43.8041,-120.5542],
+    Pennsylvania:[41.2033,-77.1945],
+    "Rhode Island":[41.5801,-71.4774],
+    "South Carolina":[33.8361,-80.9066],
+    "South Dakota":[43.9695,-99.9018],
+    Tennessee:[35.5175,-86.5804],
+    Texas:[31.9686,-99.9018],
+    Utah:[39.321,-111.0937],
+    Vermont:[44.5588,-72.5778],
+    Virginia:[37.4316,-78.6569],
+    Washington:[47.4009,-121.4905],
+    "West Virginia":[38.5976,-80.4549],
+    Wisconsin:[44.2685,-89.6165],
+    Wyoming:[43.07597,-107.2903]
+};
+
+/* =====================================================
+   CELL TOWERS
+   ===================================================== */
+
+const cellTowers = [
+    {lat:40.7128,lng:-74.006},
+    {lat:34.0522,lng:-118.2437},
+    {lat:41.8781,lng:-87.6298},
+    {lat:29.7604,lng:-95.3698},
+    {lat:33.749,lng:-84.388},
+    {lat:25.7617,lng:-80.1918},
+    {lat:47.6062,lng:-122.3321},
+    {lat:38.9072,lng:-77.0369},
+    {lat:19.4326,lng:-99.1332},
+    {lat:51.5074,lng:-0.1278},
+    {lat:48.8566,lng:2.3522},
+    {lat:35.6762,lng:139.6503},
+    {lat:1.3521,lng:103.8198},
+    {lat:-33.8688,lng:151.2093},
+    {lat:18.4655,lng:-66.1057},
+    {lat:18.4861,lng:-69.9312}
+];
+
+/* =====================================================
+   GLOBE
+   ===================================================== */
+
+const globe = Globe()(document.getElementById("globe"))
+    .globeImageUrl(
+        "https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+    )
+    .bumpImageUrl(
+        "https://unpkg.com/three-globe/example/img/earth-topology.png"
+    )
+    .backgroundImageUrl(
+        "https://unpkg.com/three-globe/example/img/night-sky.png"
+    )
+    .showAtmosphere(true)
+    .atmosphereColor("#4da6ff")
+    .atmosphereAltitude(.18)
+
+    .labelsData(locations.filter(x => x.level === 1))
+    .labelLat(x => x.lat)
+    .labelLng(x => x.lng)
+    .labelText(x => x.name)
+    .labelSize(x => x.name === "NORTH POLE" ? .65 : .42)
+    .labelColor(x => x.name === "NORTH POLE" ? "#8fdcff" : "#ffffff")
+    .labelDotRadius(x => x.name === "NORTH POLE" ? .16 : .11)
+    .labelAltitude(.015);
+
+/* CAMERA */
+globe.pointOfView({
+    lat:20,
+    lng:-30,
+    altitude:2.2
+});
+
+globe.controls().enableRotate = true;
+globe.controls().enableZoom = true;
+globe.controls().enablePan = false;
+
+/* =====================================================
+   CELL TOWERS
+   ===================================================== */
+
+globe
+    .customLayerData(cellTowers)
+    .customThreeObject(() => {
+
+        const group = new THREE.Group();
+
+        const pole = new THREE.Mesh(
+            new THREE.CylinderGeometry(.012,.018,.20,6),
+            new THREE.MeshBasicMaterial({color:0xaaaaaa})
+        );
+
+        pole.position.y = .10;
+        group.add(pole);
+
+        const light = new THREE.Mesh(
+            new THREE.SphereGeometry(.025,6,6),
+            new THREE.MeshBasicMaterial({color:0xffaa33})
+        );
+
+        light.position.y = .21;
+        group.add(light);
+
+        return group;
+    })
+    .customThreeObjectUpdate((object,data) => {
+
+        Object.assign(
+            object.position,
+            globe.getCoords(data.lat,data.lng,.02)
+        );
+
+        object.lookAt(0,0,0);
+    });
+
+/* =====================================================
+   CELL TOWER BUTTON
+   ===================================================== */
+
+let towersOn = true;
+
+document.getElementById("towerButton").onclick = () => {
+
+    towersOn = !towersOn;
+
+    globe.customLayerData(
+        towersOn ? cellTowers : []
+    );
+
+    document.getElementById("towerButton").textContent =
+        towersOn
+        ? "📡 CELL TOWERS: ON"
+        : "📡 CELL TOWERS: OFF";
+
+    document.getElementById("towerButton")
+        .classList.toggle("off",!towersOn);
+
+    document.getElementById("cellStatus").textContent =
+        towersOn ? "CONNECTED" : "OFFLINE";
+};
+
+/* =====================================================
+   3D SLEIGH
+   ===================================================== */
+
+let santaModel = null;
+let santaReady = false;
+
+const sleighStatus =
+    document.getElementById("sleighStatus");
+
+const loader = new THREE.GLTFLoader();
+
+loader.load(
+    "SantaSleigh.glb",
+
+    function(gltf) {
+
+        santaModel = gltf.scene;
+
+        /* Make the whole sleigh larger */
+        santaModel.scale.set(
+            .12,
+            .12,
+            .12
+        );
+
+        /* Put it on the globe */
+        santaModel.position.set(0,0,0);
+
+        santaModel.traverse(object => {
+
+            if(object.isMesh) {
+
+                object.castShadow = true;
+                object.receiveShadow = true;
+
+            }
+
+        });
+
+        globe.scene().add(santaModel);
+
+        santaReady = true;
+
+        sleighStatus.textContent =
+            "3D SLEIGH: ONLINE";
+
+        sleighStatus.style.color =
+            "#45d66b";
+
+    },
+
+    function(xhr) {
+
+        if(xhr.total) {
+
+            const percent =
+                Math.round(
+                    xhr.loaded / xhr.total * 100
+                );
+
+            sleighStatus.textContent =
+                "3D SLEIGH: " + percent + "%";
+
+        }
+
+    },
+
+    function(error) {
+
+        console.error(
+            "SantaSleigh.glb failed:",
+            error
+        );
+
+        sleighStatus.textContent =
+            "3D SLEIGH: FILE NOT FOUND";
+
+        sleighStatus.style.color =
+            "#ff5555";
+    }
+);
+
+/* =====================================================
+   SANTA POSITION
+   ===================================================== */
+
+function putSanta(lat,lng) {
+
+    if(!santaModel) return;
+
+    const coords =
+        globe.getCoords(
+            lat,
+            lng,
+            .18
+        );
+
+    santaModel.position.set(
+        coords.x,
+        coords.y,
+        coords.z
+    );
+
+    /*
+       Make the sleigh face roughly
+       toward the next destination.
+    */
+}
+
+/* =====================================================
+   ROUTE
+   ===================================================== */
+
+let route = [];
+let segment = 0;
+let running = false;
+let segmentStart = 0;
+let lastPosition = null;
+
+function randomRoute() {
+
+    const state =
+        document.getElementById("stateSelect").value;
+
+    let finalDestination =
+        state && states[state]
+        ? {
+            name:state,
+            lat:states[state][0],
+            lng:states[state][1]
+        }
+        : {
+            name:"Georgia",
+            lat:32.1656,
+            lng:-82.9001
+        };
+
+    route = [
+        {
+            name:"NORTH POLE",
+            lat:89.5,
+            lng:0
+        }
+    ];
+
+    /*
+       Random stops around the world.
+    */
+
+    const pool =
+        locations.filter(
+            x =>
+                x.name !== "NORTH POLE" &&
+                x.level === 1
+        );
+
+    const used = [];
+
+    while(used.length < 7) {
+
+        const item =
+            pool[
+                Math.floor(
+                    Math.random() * pool.length
+                )
+            ];
+
+        if(!used.includes(item)) {
+
+            used.push(item);
+
+            route.push({
+                name:item.name,
+                lat:item.lat,
+                lng:item.lng
+            });
+        }
+    }
+
+    route.push(finalDestination);
+
+    segment = 0;
+
+    lastPosition = {
+        lat:route[0].lat,
+        lng:route[0].lng
+    };
+
+    putSanta(
+        route[0].lat,
+        route[0].lng
+    );
+}
+
+/* =====================================================
+   GREAT CIRCLE INTERPOLATION
+   ===================================================== */
+
+function interpolate(a,b,t) {
+
+    const lat1 =
+        a.lat * Math.PI / 180;
+
+    const lon1 =
+        a.lng * Math.PI / 180;
+
+    const lat2 =
+        b.lat * Math.PI / 180;
+
+    const lon2 =
+        b.lng * Math.PI / 180;
+
+    const x1 =
+        Math.cos(lat1) * Math.cos(lon1);
+
+    const y1 =
+        Math.cos(lat1) * Math.sin(lon1);
+
+    const z1 =
+        Math.sin(lat1);
+
+    const x2 =
+        Math.cos(lat2) * Math.cos(lon2);
+
+    const y2 =
+        Math.cos(lat2) * Math.sin(lon2);
+
+    const z2 =
+        Math.sin(lat2);
+
+    const dot =
+        Math.min(
+            1,
+            Math.max(
+                -1,
+                x1*x2 + y1*y2 + z1*z2
+            )
+        );
+
+    const angle =
+        Math.acos(dot);
+
+    if(angle < .00001) {
+
+        return {
+            lat:a.lat,
+            lng:a.lng
+        };
+
+    }
+
+    const sinAngle =
+        Math.sin(angle);
+
+    const A =
+        Math.sin((1-t)*angle) /
+        sinAngle;
+
+    const B =
+        Math.sin(t*angle) /
+        sinAngle;
+
+    const x =
+        A*x1 + B*x2;
+
+    const y =
+        A*y1 + B*y2;
+
+    const z =
+        A*z1 + B*z2;
+
+    return {
+        lat:
+            Math.atan2(
+                z,
+                Math.sqrt(x*x+y*y)
+            ) * 180 / Math.PI,
+
+        lng:
+            Math.atan2(y,x)
+            * 180 / Math.PI
+    };
+}
+
+/* =====================================================
+   ANIMATION
+   ===================================================== */
+
+function animateSanta() {
+
+    if(!running || route.length < 2) {
+
+        requestAnimationFrame(
+            animateSanta
+        );
+
+        return;
+    }
+
+    const now =
+        performance.now();
+
+    const duration =
+        5200;
+
+    const a =
+        route[segment];
+
+    const b =
+        route[segment + 1];
+
+    let t =
+        (now - segmentStart) /
+        duration;
+
+    if(t >= 1) {
+
+        segment++;
+
+        if(segment >= route.length - 1) {
+
+            running = false;
+
+            document.getElementById("status")
+                .innerHTML =
+                '<span id="statusDot"></span> ROUTE COMPLETE';
+
+            document.getElementById("location")
+                .textContent =
+                b.name.toUpperCase();
+
+            putSanta(
+                b.lat,
+                b.lng
+            );
+
+            requestAnimationFrame(
+                animateSanta
+            );
+
+            return;
+        }
+
+        segmentStart = now;
+
+        t = 0;
+    }
+
+    const pos =
+        interpolate(a,b,t);
+
+    putSanta(
+        pos.lat,
+        pos.lng
+    );
+
+    document.getElementById("location")
+        .textContent =
+        b.name.toUpperCase();
+
+    requestAnimationFrame(
+        animateSanta
+    );
+}
+
+requestAnimationFrame(
+    animateSanta
+);
+
+/* =====================================================
+   START TRACKING
+   ===================================================== */
+
+document.getElementById("startTracking")
+    .onclick = () => {
+
+        randomRoute();
+
+        running = true;
+
+        segmentStart =
+            performance.now();
+
+        document.getElementById("status")
+            .innerHTML =
+            '<span id="statusDot"></span> TRACKING ACTIVE';
+
+        document.getElementById("destination")
+            .textContent =
+            document.getElementById(
+                "stateSelect"
+            ).value || "GEORGIA";
+
+        document.getElementById("location")
+            .textContent =
+            "NORTH POLE";
+    };
+
+/* =====================================================
+   PARENT SETTINGS
+   ===================================================== */
+
+const savedState =
+    localStorage.getItem(
+        "santaState"
+    );
+
+const savedTime =
+    localStorage.getItem(
+        "santaTime"
+    );
+
+if(savedState) {
+
+    document.getElementById(
+        "stateSelect"
+    ).value =
+        savedState;
+}
+
+if(savedTime) {
+
+    document.getElementById(
+        "arrivalTime"
+    ).value =
+        savedTime;
+}
+
+document.getElementById("saveSettings")
+    .onclick = () => {
+
+        const state =
+            document.getElementById(
+                "stateSelect"
+            ).value;
+
+        const time =
+            document.getElementById(
+                "arrivalTime"
+            ).value;
+
+        localStorage.setItem(
+            "santaState",
+            state
+        );
+
+        localStorage.setItem(
+            "santaTime",
+            time
+        );
+
+        document.getElementById(
+            "destination"
+        ).textContent =
+            state || "NOT SET";
+
+        alert(
+            "Parent settings saved."
+        );
+    };
+
+/* =====================================================
+   CHRISTMAS MUSIC
+   ===================================================== */
+
+const music =
+    document.getElementById(
+        "christmasMusic"
+    );
+
+document.getElementById(
+    "musicButton"
+).onclick = async () => {
+
+    try {
+
+        if(music.paused) {
+
+            await music.play();
+
+            document.getElementById(
+                "musicButton"
+            ).textContent =
+                "🔊 CHRISTMAS JAZZ: ON";
+
+        }
+
+        else {
+
+            music.pause();
+
+            document.getElementById(
+                "musicButton"
+            ).textContent =
+                "🎄 PLAY CHRISTMAS JAZZ";
+        }
+
+    }
+
+    catch(error) {
+
+        alert(
+            "Click the music button again to start the Christmas music."
+        );
+    }
+};
+
+/* =====================================================
+   LABEL DETAIL WHEN ZOOMING
+   ===================================================== */
+
+let lastLevel = 1;
+
+globe.controls().addEventListener(
+    "change",
+    () => {
+
+        const altitude =
+            globe.pointOfView().altitude;
+
+        let level;
+
+        if(altitude > 1.5)
+            level = 1;
+
+        else if(altitude > 1.0)
+            level = 2;
+
+        else if(altitude > .65)
+            level = 3;
+
+        else
+            level = 4;
+
+        if(level !== lastLevel) {
+
+            lastLevel = level;
+
+            globe.labelsData(
+                locations.filter(
+                    city =>
+                        city.level <= level
+                )
+            );
+        }
+    }
+);
+
+</script>
+
+</body>
+</html>
+```
